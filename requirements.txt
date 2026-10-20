@@ -1,0 +1,12 @@
+sentence-transformers
+transformers
+torch
+spacy
+scikit-learn
+pandas
+numpy
+scipy
+joblib
+streamlit
+datasets
+tqdm
