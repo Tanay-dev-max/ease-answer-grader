@@ -84,7 +84,7 @@ with st.spinner("Grading..."):
     base, phi = shapley_values(model, x, background)
     importance = pipe.word_importance(stu, ref)
 
-band = "Strong" if score >= 8 else "Partial" if score >= 5 else "Weak"
+band = "Strong" if score >= 9 else "Partial" if score >= 6.5 else "Weak"
 c_score, c_info = st.columns([1, 2])
 c_score.metric("Score", f"{score:.1f} / 10", help="Predicted human grade, rescaled from 0-5 to 0-10.")
 c_score.write(f"**{band} answer** · typical error ±{cv_mae:.1f}")
