@@ -10,7 +10,8 @@ import numpy as np
 import pandas as pd
 import streamlit as st
 
-from ease_core import FEATURES, LABELS, MAX_SCORE, REVIEW_CONTRA, feedback, shapley_values, to_ten
+from ease_core import (FEATURES, LABELS, MAX_SCORE, REVIEW_CONTRA, SHORT_CAP10, content_words, feedback,
+                       shapley_values, short_answer_guard, to_ten)
 
 st.set_page_config(page_title="EASE", layout="wide")
 
@@ -53,10 +54,13 @@ def grade(student, reference, question="", explain=True):
     f, matched, missing, (ent, neu, con) = pipe.features(student, reference, question)
     x = np.array([f[c] for c in FEATURES])
     raw = float(model.predict(x[None, :])[0])
-    score = to_ten(raw)
-    out = {"f": f, "x": x, "raw": raw, "score": score, "band": band_of(score), "matched": matched,
-           "missing": missing, "nli": (ent, neu, con), "flagged": con > REVIEW_CONTRA,
-           "tips": feedback(f, missing, score)}
+    model_score = to_ten(raw)
+    n_words = content_words(student, question)
+    score, too_short = short_answer_guard(model_score, ent, n_words)
+    out = {"f": f, "x": x, "raw": raw, "model_score": model_score, "score": score,
+           "band": band_of(score), "matched": matched, "missing": missing, "nli": (ent, neu, con),
+           "flagged": con > REVIEW_CONTRA, "too_short": too_short, "n_words": n_words,
+           "tips": feedback(f, missing, score, too_short)}
     if explain:
         out["base"], out["phi"] = shapley_values(model, x, background)
     return out
@@ -124,6 +128,10 @@ with tab_one:
             if st.session_state.human10 is not None:
                 st.info(f"Human grader gave this answer **{st.session_state.human10:.0f}/10** "
                         f"(EASE: {r['score']:.1f}/10).")
+            if r["too_short"]:
+                st.warning(f"Very short answer: only {r['n_words']} content word(s) and almost no "
+                           f"entailment, so the score is capped at {SHORT_CAP10:.0f}/10. On our training "
+                           f"data, answers like this averaged 3.8/10 from human graders.")
             if r["flagged"]:
                 st.warning(f"Flagged for teacher review: the NLI model sees a possible contradiction "
                            f"(p = {con:.2f}). The score is not changed automatically, because on our "
@@ -150,9 +158,13 @@ with tab_one:
             rows.append(f"<tr><td>{LABELS[key]}</td><td>{val:.2f}</td><td style='width:30%'>{bar}</td>"
                         f"<td style='text-align:right;color:{color}'><b>{p:+.2f}</b></td></tr>")
         model_out = r["raw"] / MAX_SCORE * 10
-        if abs(model_out - r["score"]) > 0.005:
+        if abs(model_out - r["model_score"]) > 0.005:
             rows.append(f"<tr><td>Model output {model_out:.2f}, limited to the 0-10 range</td><td></td>"
-                        f"<td></td><td style='text-align:right'>{r['score'] - model_out:+.2f}</td></tr>")
+                        f"<td></td><td style='text-align:right'>{r['model_score'] - model_out:+.2f}</td></tr>")
+        if r["too_short"]:
+            rows.append(f"<tr><td>Short-answer rule (1 content word, no entailment)</td><td></td><td></td>"
+                        f"<td style='text-align:right;color:#c0392b'><b>{r['score'] - r['model_score']:+.2f}</b>"
+                        f"</td></tr>")
         rows.append(f"<tr><td><b>Final score</b></td><td></td><td></td>"
                     f"<td style='text-align:right'><b>{r['score']:.2f} / 10</b></td></tr>")
         st.markdown("<table style='width:100%'><tr><th>Signal</th><th>Value</th><th>Effect</th>"
@@ -211,7 +223,7 @@ with tab_class:
                     else:
                         g = grade(stu_i, ref_i, q_i, explain=False)
                         res = {"score": round(g["score"], 1), "band": g["band"],
-                               "flag": "Review" if g["flagged"] else "",
+                               "flag": "Too short" if g["too_short"] else "Review" if g["flagged"] else "",
                                "missing": ", ".join(g["missing"]), "feedback": g["tips"][0]}
                     results.append(res)
                     bar.progress((i + 1) / len(df), text=f"Graded {i + 1} of {len(df)}")
@@ -223,7 +235,7 @@ with tab_class:
         m1, m2, m3, m4 = st.columns(4)
         m1.metric("Answers graded", len(batch))
         m2.metric("Class average", f"{batch.score.mean():.1f} / 10")
-        m3.metric("Flagged for review", int((batch.flag == "Review").sum()))
+        m3.metric("Flagged for review", int((batch.flag != "").sum()))
         if "human" in batch.columns:
             human = pd.to_numeric(batch.human, errors="coerce")
             if human.notna().sum() > 2 and human.nunique() > 1:

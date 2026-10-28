@@ -34,6 +34,10 @@ Pearson gain of EASE over similarity-only: **+0.173** (bootstrap 95% CI +0.148 t
 
 The order is correct in every band, but scores are compressed toward the dataset average: only 7.5% of Mohler answers are graded 4/10 or lower, so the model has few wrong answers to learn from.
 
+## Short-answer guard
+
+Answers with at most 1 content word and entailment below 0.05 are capped at 5/10. 41 Mohler answers match; human graders gave them 3.8/10 on average. On unseen-question CV the guard changes Pearson from 0.652 to 0.654 and MAE from 0.594 to 0.594.
+
 ## Ablation (drop one signal, random 5-fold CV)
 
 | Signal removed | Pearson | MAE |

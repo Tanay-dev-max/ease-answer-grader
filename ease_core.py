@@ -28,6 +28,14 @@ MONOTONIC = [1, 1, 1, -1, 1]
 # answers that human graders scored highly (see train.py output).
 REVIEW_CONTRA = 0.9
 
+# Short-answer guard: an answer with at most 1 content word (after removing
+# question words) and almost no entailment is capped at 5/10. On Mohler, such
+# answers averaged 3.8/10 from human graders; the cap leaves cross-validated
+# accuracy unchanged (see train.py output).
+SHORT_MAX_WORDS = 1
+SHORT_ENTAIL = 0.05
+SHORT_CAP10 = 5.0
+
 _STOP = {
     "a", "an", "the", "is", "are", "was", "were", "be", "been", "being", "am",
     "of", "in", "on", "at", "to", "for", "from", "by", "with", "as", "into",
@@ -63,6 +71,18 @@ def keyword_overlap(student, reference, question=""):
     if r_demoted:
         return len((s - q) & r_demoted) / len(r_demoted)
     return len(s & r) / len(r) if r else 0.0
+
+
+def content_words(student, question=""):
+    """Number of distinct content words in the answer that are not copied from the question."""
+    return len(_tokens(student) - _tokens(question))
+
+
+def short_answer_guard(score10, entail, n_words):
+    """Returns (score, applied). Caps very short, non-entailing answers."""
+    if n_words <= SHORT_MAX_WORDS and entail < SHORT_ENTAIL:
+        return min(score10, SHORT_CAP10), score10 > SHORT_CAP10
+    return score10, False
 
 
 def to_ten(raw_score):
@@ -103,9 +123,11 @@ def shapley_values(model, x, background):
     return value[()], phi
 
 
-def feedback(f, missing, score10):
+def feedback(f, missing, score10, too_short=False):
     """Short, rule-based feedback built from the signals."""
     tips = []
+    if too_short:
+        tips.append("Your answer is too short to show understanding. Explain the idea in a full sentence.")
     if f["contra"] > REVIEW_CONTRA:
         tips.append("Part of your answer may contradict the reference answer. "
                     "Re-check the core definition.")

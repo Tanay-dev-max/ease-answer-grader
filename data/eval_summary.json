@@ -1,0 +1,171 @@
+{
+  "n": 2273,
+  "questions": 81,
+  "systems": [
+    {
+      "split": "5-fold CV (random)",
+      "system": "Similarity only (baseline)",
+      "pearson": 0.49370048272491296,
+      "spearman": 0.47992670653311165,
+      "mae": 0.7258451969954041,
+      "rmse": 0.9536864919412591
+    },
+    {
+      "split": "5-fold CV (random)",
+      "system": "Linear fusion (Ridge, 5 signals)",
+      "pearson": 0.6063513337301483,
+      "spearman": 0.643253333554221,
+      "mae": 0.6457115537684881,
+      "rmse": 0.8778920140259163
+    },
+    {
+      "split": "5-fold CV (random)",
+      "system": "EASE (monotonic boosted trees, 5 signals)",
+      "pearson": 0.6655893485652253,
+      "spearman": 0.6691209318287829,
+      "mae": 0.5797120109849312,
+      "rmse": 0.8184506279666707
+    },
+    {
+      "split": "5-fold CV (unseen questions)",
+      "system": "Similarity only (baseline)",
+      "pearson": 0.49076373734934503,
+      "spearman": 0.48004876489816545,
+      "mae": 0.7264999823096484,
+      "rmse": 0.9553751680359025
+    },
+    {
+      "split": "5-fold CV (unseen questions)",
+      "system": "Linear fusion (Ridge, 5 signals)",
+      "pearson": 0.6061853571967433,
+      "spearman": 0.6438713524060788,
+      "mae": 0.6462952606571926,
+      "rmse": 0.8781392237308878
+    },
+    {
+      "split": "5-fold CV (unseen questions)",
+      "system": "EASE (monotonic boosted trees, 5 signals)",
+      "pearson": 0.6520878181473955,
+      "spearman": 0.6586542296987518,
+      "mae": 0.5936200204279773,
+      "rmse": 0.8319151195945
+    }
+  ],
+  "gain": {
+    "mean": 0.1727911185196808,
+    "lo": 0.14793822832605727,
+    "hi": 0.19843094633773017
+  },
+  "bands": [
+    {
+      "band": "0-4",
+      "n": 171,
+      "human10": 3.0292397660818713,
+      "ease10": 6.274003762367163
+    },
+    {
+      "band": "5-7",
+      "n": 463,
+      "human10": 6.138228941684665,
+      "ease10": 7.230851606901292
+    },
+    {
+      "band": "8-9",
+      "n": 518,
+      "human10": 8.59073359073359,
+      "ease10": 8.112127616685257
+    },
+    {
+      "band": "10",
+      "n": 1121,
+      "human10": 10.0,
+      "ease10": 9.1796327929837
+    }
+  ],
+  "guard": {
+    "matches": 41,
+    "human10": 3.8292682926829267,
+    "pearson_before": 0.6520878181473955,
+    "pearson_after": 0.6544155480260385
+  },
+  "ablation": [
+    {
+      "removed": "none (full EASE)",
+      "pearson": 0.6655893485652253,
+      "mae": 0.5797120109849312
+    },
+    {
+      "removed": "Semantic similarity (Sentence-BERT)",
+      "pearson": 0.6364663226128181,
+      "mae": 0.5928355705030632
+    },
+    {
+      "removed": "Concept coverage (spaCy noun phrases)",
+      "pearson": 0.665457019160722,
+      "mae": 0.5798972512612566
+    },
+    {
+      "removed": "NLI entailment probability",
+      "pearson": 0.6189290018403057,
+      "mae": 0.6172672328589113
+    },
+    {
+      "removed": "NLI contradiction probability",
+      "pearson": 0.6602278614122857,
+      "mae": 0.581647226856833
+    },
+    {
+      "removed": "Keyword overlap (question words removed)",
+      "pearson": 0.6321136033578254,
+      "mae": 0.6054167278597604
+    }
+  ],
+  "contradiction": [
+    {
+      "threshold": 0.5,
+      "flagged": 477,
+      "mean_human10": 7.727463312368973,
+      "share_human_ge_8": 0.6289308176100629
+    },
+    {
+      "threshold": 0.7,
+      "flagged": 367,
+      "mean_human10": 7.730245231607629,
+      "share_human_ge_8": 0.6239782016348774
+    },
+    {
+      "threshold": 0.9,
+      "flagged": 215,
+      "mean_human10": 7.590697674418605,
+      "share_human_ge_8": 0.5906976744186047
+    },
+    {
+      "threshold": 0.99,
+      "flagged": 46,
+      "mean_human10": 6.434782608695652,
+      "share_human_ge_8": 0.4782608695652174
+    }
+  ],
+  "importance": [
+    {
+      "signal": "Semantic similarity (Sentence-BERT)",
+      "points": 0.45475361529417496
+    },
+    {
+      "signal": "Concept coverage (spaCy noun phrases)",
+      "points": 0.020382571857605215
+    },
+    {
+      "signal": "NLI entailment probability",
+      "points": 0.5474473995342775
+    },
+    {
+      "signal": "NLI contradiction probability",
+      "points": 0.18294675850423428
+    },
+    {
+      "signal": "Keyword overlap (question words removed)",
+      "points": 0.5824677224708189
+    }
+  ]
+}

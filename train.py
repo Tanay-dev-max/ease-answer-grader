@@ -18,7 +18,8 @@ from sklearn.linear_model import Ridge
 from sklearn.metrics import mean_absolute_error, mean_squared_error
 from sklearn.model_selection import GroupKFold, KFold
 
-from ease_core import FEATURES, LABELS, MONOTONIC, REVIEW_CONTRA, keyword_overlap, shapley_values
+from ease_core import (FEATURES, LABELS, MONOTONIC, SHORT_CAP10, SHORT_ENTAIL, SHORT_MAX_WORDS, content_words,
+                       keyword_overlap, shapley_values, short_answer_guard)
 
 SEED = 42
 REF, STU, Q, SCORE = "instructor_answer", "student_answer", "question", "score_avg"
@@ -122,6 +123,22 @@ lines.append("\nThe order is correct in every band, but scores are compressed to
              "few wrong answers to learn from.")
 print()
 
+# ----------------------------------------------------- short-answer guard check
+n_words = np.array([content_words(s, q) for s, q in zip(raw[STU], raw[Q])])
+short = (n_words <= SHORT_MAX_WORDS) & (df.entail.values < SHORT_ENTAIL)
+guarded = np.array([short_answer_guard(p * 2, e, n)[0] for p, e, n in zip(held_out, df.entail, n_words)]) / 2
+before, after = metrics(held_out), metrics(guarded)
+print(f"== Short-answer guard (<= {SHORT_MAX_WORDS} content word, entailment < {SHORT_ENTAIL}, cap {SHORT_CAP10:.0f}/10)")
+print(f"  {short.sum()} answers match; human graders gave them {y[short].mean() * 2:.1f}/10 on average")
+print(f"  unseen-question Pearson {before['pearson']:.3f} -> {after['pearson']:.3f}, MAE {before['mae']:.3f} -> {after['mae']:.3f}\n")
+lines += ["\n## Short-answer guard\n",
+          f"Answers with at most {SHORT_MAX_WORDS} content word and entailment below {SHORT_ENTAIL} are capped at "
+          f"{SHORT_CAP10:.0f}/10. {short.sum()} Mohler answers match; human graders gave them "
+          f"{y[short].mean() * 2:.1f}/10 on average. On unseen-question CV the guard changes Pearson from "
+          f"{before['pearson']:.3f} to {after['pearson']:.3f} and MAE from {before['mae']:.3f} to {after['mae']:.3f}."]
+guard_summary = {"matches": int(short.sum()), "human10": float(y[short].mean() * 2),
+                 "pearson_before": before["pearson"], "pearson_after": after["pearson"]}
+
 # ------------------------------------------------------------------ ablation
 print("== Ablation (EASE, random CV): drop one signal")
 lines += ["\n## Ablation (drop one signal, random 5-fold CV)\n",
@@ -201,7 +218,7 @@ summary = {
     "n": len(df), "questions": int(df.question_id.nunique()),
     "systems": [{"split": sp, "system": sy, **metrics(p)} for (sp, sy), p in oof.items()],
     "gain": {"mean": float(np.mean(diffs)), "lo": float(lo), "hi": float(hi)},
-    "bands": band_rows, "ablation": ablation, "contradiction": contra_rows,
+    "bands": band_rows, "guard": guard_summary, "ablation": ablation, "contradiction": contra_rows,
     "importance": [{"signal": LABELS[k], "points": float(v)} for k, v in importance.items()],
 }
 with open("data/eval_summary.json", "w", encoding="utf-8") as fh:
