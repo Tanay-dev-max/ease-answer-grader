@@ -8,5 +8,6 @@ numpy
 scipy
 joblib
 streamlit
-datasets
 tqdm
+datasets
+huggingface-hub<2.0

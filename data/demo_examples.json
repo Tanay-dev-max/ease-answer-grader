@@ -1,0 +1,23 @@
+[
+  {
+    "label": "Low human grade (human 3/10)",
+    "question": "How many constructors can be created for a class?",
+    "reference": "Unlimited number.",
+    "student": "It depends what type of class is being defined. Typically you would have a constructor call for each object.",
+    "human10": 3.0
+  },
+  {
+    "label": "Mid human grade (human 7/10)",
+    "question": "What is the role of a header-file?",
+    "reference": "To store a class interface, including data members and member function prototypes.",
+    "student": "Allow compiler to recognize the classes when used elsewhere",
+    "human10": 7.0
+  },
+  {
+    "label": "High human grade (human 10/10)",
+    "question": "What is the height of a tree?",
+    "reference": "The length of the longest path from the root to any of its leaves.",
+    "student": "The number of nodes on the longest path from the root to the leaf.",
+    "human10": 10.0
+  }
+]
