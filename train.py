@@ -111,7 +111,10 @@ bands = [("0-4", y <= 2), ("5-7", (y > 2) & (y <= 3.5)), ("8-9", (y > 3.5) & (y 
 print("== Mean EASE score by human grade band (unseen questions, out of 10)")
 lines += ["\n## Mean EASE score by human grade band (unseen-question CV, out of 10)\n",
           "| Human grade /10 | Answers | Mean human | Mean EASE |", "|---|---|---|---|"]
+band_rows = []
 for name, mask in bands:
+    band_rows.append({"band": name, "n": int(mask.sum()), "human10": y[mask].mean() * 2,
+                      "ease10": held_out[mask].mean() * 2})
     print(f"  human {name:4s}: n={mask.sum():4d}  human {y[mask].mean() * 2:.1f}  EASE {held_out[mask].mean() * 2:.1f}")
     lines.append(f"| {name} | {mask.sum()} | {y[mask].mean() * 2:.1f} | {held_out[mask].mean() * 2:.1f} |")
 lines.append("\nThe order is correct in every band, but scores are compressed toward the dataset "
@@ -125,6 +128,7 @@ lines += ["\n## Ablation (drop one signal, random 5-fold CV)\n",
           "| Signal removed | Pearson | MAE |", "|---|---|---|"]
 full = metrics(ease)
 lines.append(f"| none (full EASE) | {full['pearson']:.3f} | {full['mae']:.3f} |")
+ablation = [{"removed": "none (full EASE)", "pearson": full["pearson"], "mae": full["mae"]}]
 for drop in FEATURES:
     keep = [c for c in FEATURES if c != drop]
     mono = [MONOTONIC[FEATURES.index(c)] for c in keep]
@@ -134,6 +138,7 @@ for drop in FEATURES:
             max_depth=3, learning_rate=0.05, max_iter=200, min_samples_leaf=20,
             monotonic_cst=mono, early_stopping=False, random_state=0)
     m = metrics(out_of_fold(make_drop, df[keep].values, *splits["5-fold CV (random)"]))
+    ablation.append({"removed": LABELS[drop], "pearson": m["pearson"], "mae": m["mae"]})
     print(f"  without {drop:9s} r={m['pearson']:.3f}  MAE={m['mae']:.3f}")
     lines.append(f"| {LABELS[drop]} | {m['pearson']:.3f} | {m['mae']:.3f} |")
 
@@ -142,8 +147,11 @@ print("\n== Contradiction probability vs human grade")
 lines += ["\n## Contradiction flag check\n",
           "| Contradiction prob. above | Answers flagged | Mean human grade | Flagged but human >= 4/5 |",
           "|---|---|---|---|"]
+contra_rows = []
 for t in [0.5, 0.7, 0.9, 0.99]:
     hit = df.contra > t
+    contra_rows.append({"threshold": t, "flagged": int(hit.sum()), "mean_human10": df.human[hit].mean() * 2,
+                        "share_human_ge_8": float((df.human[hit] >= 4).mean())})
     print(f"  > {t}: {hit.sum():4d} flagged, mean human {df.human[hit].mean():.2f}, "
           f"{(df.human[hit] >= 4).mean():.0%} were graded >= 4/5 by humans")
     lines.append(f"| {t} | {hit.sum()} | {df.human[hit].mean():.2f} | {(df.human[hit] >= 4).mean():.0%} |")
@@ -188,6 +196,20 @@ for label, mask in [("Low human grade", y <= 1.5), ("Mid human grade", (y >= 2.5
 with open("data/demo_examples.json", "w", encoding="utf-8") as fh:
     json.dump(demos, fh, indent=2, ensure_ascii=False)
 
+# ------------------------------------------ evaluation data for the dashboard
+summary = {
+    "n": len(df), "questions": int(df.question_id.nunique()),
+    "systems": [{"split": sp, "system": sy, **metrics(p)} for (sp, sy), p in oof.items()],
+    "gain": {"mean": float(np.mean(diffs)), "lo": float(lo), "hi": float(hi)},
+    "bands": band_rows, "ablation": ablation, "contradiction": contra_rows,
+    "importance": [{"signal": LABELS[k], "points": float(v)} for k, v in importance.items()],
+}
+with open("data/eval_summary.json", "w", encoding="utf-8") as fh:
+    json.dump(summary, fh, indent=2, default=float)
+pd.DataFrame({"human10": y * 2, "ease10": held_out * 2, "question_id": df.question_id}).to_csv(
+    "data/oof_predictions.csv", index=False)
+
 with open("results.md", "w", encoding="utf-8") as fh:
     fh.write("\n".join(lines) + "\n")
-print(f"\nSaved ease_model.joblib, results.md, data/demo_examples.json ({len(demos)} examples)")
+print(f"\nSaved ease_model.joblib, results.md, data/demo_examples.json ({len(demos)} examples), "
+      "data/eval_summary.json, data/oof_predictions.csv")

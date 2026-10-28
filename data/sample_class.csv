@@ -1,0 +1,10 @@
+student_name,question,reference,student
+Asha,What is the main function of an operating system?,An operating system manages computer hardware and software resources and provides an interface for users and applications.,It manages the hardware and software resources of the computer and provides an interface for users and applications.
+Ravi,What is the main function of an operating system?,An operating system manages computer hardware and software resources and provides an interface for users and applications.,It manages the computer hardware.
+Meena,What is the main function of an operating system?,An operating system manages computer hardware and software resources and provides an interface for users and applications.,Microsoft Word.
+Asha,What is a stack?,A stack is a last in first out data structure where elements are added and removed from the same end.,"A stack is a last in first out structure, so elements are added and removed only from the top end."
+Ravi,What is a stack?,A stack is a last in first out data structure where elements are added and removed from the same end.,It is a data structure that stores elements.
+Meena,What is a stack?,A stack is a last in first out data structure where elements are added and removed from the same end.,A queue.
+Asha,What is the inorder traversal of a binary tree?,"Traverse the left subtree, then the root, then the right subtree.",traverse the left subtree. visit the root. traverse the right subtree.
+Ravi,What is the inorder traversal of a binary tree?,"Traverse the left subtree, then the root, then the right subtree.",Its used to visit nodes of a binary search tree in a search key order.
+Meena,What is the inorder traversal of a binary tree?,"Traverse the left subtree, then the root, then the right subtree.",postorder
